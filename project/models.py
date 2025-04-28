@@ -1,4 +1,5 @@
 from django.db import models
+from .choices import TaskStatusEnum, DiaryGradeEnum
 
 
 class Image(models.Model):
@@ -138,3 +139,31 @@ class LessonSchedule(models.Model):
 
     def __str__(self):
         return f"{self.subject} for {self.class_name} by {self.teacher}"
+
+#  TODO: Добавить связь с юзером
+class Task(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='tasks')
+    #user = models.ForeignKey('MyUser', on_delete=models.CASCADE, related_name='tasks')
+    title = models.CharField(max_length=255, verbose_name='Название задачи')
+    description = models.TextField(verbose_name='Описание задачи')
+    status = models.CharField(
+        max_length=50,
+        choices=TaskStatusEnum.choices,
+        default=TaskStatusEnum.PENDING
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+
+    def __str__(self):
+        return f"Task: {self.title}"
+
+
+#  TODO: Добавить связь с юзером
+class Diary(models.Model):
+    #user = models.ForeignKey('MyUser', on_delete=models.CASCADE, related_name='diaries')
+    title = models.CharField(max_length=255, verbose_name='Название записи')
+    description = models.TextField(verbose_name='Описание записи')
+    grade = models.IntegerField(choices=DiaryGradeEnum.choices, verbose_name='Оценка')
+    date = models.DateTimeField(auto_now_add=True, verbose_name='Дата записи')
+
+    def __str__(self):
+        return f"Diary Entry: {self.title} for {self.user}"

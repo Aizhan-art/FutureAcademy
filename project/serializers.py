@@ -12,3 +12,7 @@ class LessonWithGradeSerializer(serializers.ModelSerializer):
         user = self.context.get('user')
         diary = Diary.objects.filter(user=user, lesson=obj).first()
         return diary.grade if diary else None
+
+
+
+

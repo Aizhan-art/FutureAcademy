@@ -1,140 +1,68 @@
+from user.models import MyUser
+
 from django.db import models
+from django.contrib.auth import get_user_model
+
+MyUserUser = get_user_model()
 
 
-class Image(models.Model):
-    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='images')
-    file = models.ImageField(upload_to='media/projects/detail_image')
-    created_date = models.DateTimeField(auto_now_add=True)
-    update_date = models.DateTimeField(auto_now=True)
-
-
-    def __str__(self):
-        return str(self.file)
-
-#  TODO: Добавить связь с юзером
 class Project(models.Model):
-    # user = modes.(Fo....)
-    title = models.CharField(max_length=225, verbose_name='Название')
-    description = models.TextField(verbose_name='Описание')
+    title = models.CharField(max_length=225, verbose_name='Название проекта')
+    description = models.TextField(verbose_name='Описание проекта')
     main_cover = models.ImageField(upload_to='media/projects/main_cover', verbose_name='Главное фото')
+    deadline = models.DateField(verbose_name='Дедлайн', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
-#  TODO: Добавить связь с юзером
-class UserProject(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-
-    #def __str__(self):
-       # return f"{self.user} — {self.project}"
-
-
-#  TODO: Добавить связь с юзером
-class Event(models.Model):
-    #users = models.ManyToManyField(User, through='UserEvent', related_name='events')
+class Task(models.Model):
+    project = models.ForeignKey(Project, related_name='tasks', on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
-    description = models.TextField()
+    main_cover = models.ImageField(upload_to='media/projects/main_cover', verbose_name='Главное фото')
+    is_active = models.BooleanField(default=True)
+    responsible_user = models.ForeignKey(MyUserUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
+
+    def __str__(self):
+        return self.title
+
+class Event(models.Model):
+    title = models.CharField(max_length=255)
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    grade = models.IntegerField()  # или models.CharField, если уровни разные
-
+    grade = models.PositiveSmallIntegerField()
 
     def __str__(self):
         return self.title
 
 
-#  TODO: Добавить связь с юзером
-class UserEvent(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+class StudentActivity(models.Model):
+    student = models.ForeignKey(MyUser, on_delete=models.CASCADE, related_name='activities')
+    description = models.TextField()
+    date = models.DateField()
 
-    #def __str__(self):
-     #   return f"{self.user} — {self.event}"
+    def __str__(self):
+        return f"{self.student.first_name} - {self.description}"
 
-
-#  TODO: Добавить связь с юзером
-class Classmate(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    class_name = models.CharField(max_length=255)
-    graduation_year = models.IntegerField()
-
-    #def __str__(self):
-     #   return f"{self.user} — {self.class_name}"
-
-
-#  TODO: Добавить связь с юзером
-class Employee(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    position = models.CharField(max_length=255)
-    department = models.CharField(max_length=255)
-    hire_date = models.DateField()
-
-    #def __str__(self):
-     #   return f"{self.user} — {self.position}"
-
-#  TODO: Добавить связь с юзером
 class News(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=255, verbose_name='Название')
+    description = models.TextField(verbose_name='Описание', default='Нет описания')
+    image = models.ImageField(upload_to='media/news/', verbose_name='Фото', default='no-image.png')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     def __str__(self):
         return self.title
 
-#  TODO: Добавить связь с юзером
-class Dashboard(models.Model):
-    #user = models.OneToOneField(User, on_delete=models.CASCADE)
-    projects_count = models.IntegerField(default=0)
-    events_count = models.IntegerField(default=0)
-
-    #def __str__(self):
-     #   return f"Dashboard for {self.user}"
-
-
-
-#  TODO: Добавить связь с юзером
-class Chat(models.Model):
-    title = models.CharField(max_length=255)
-    is_group = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    #users = models.ManyToManyField(User, through='ChatUser', related_name='chats')
+#Айжан, Манас нужна ли нам моделька Студент? Чтобыпри регистрации Родителя, у него точно был ребенок в этой школе?
+class Student(models.Model):
+    parent = models.ForeignKey(MyUser, on_delete=models.CASCADE, related_name='children')
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    grade = models.PositiveSmallIntegerField()
+    avatar = models.ImageField(upload_to='media/child_avatar', blank=True, null=True)
+    average_score = models.DecimalField(max_digits=4, decimal_places=2, default=0)
 
     def __str__(self):
-        return self.title
+        return f"{self.first_name} {self.last_name}"
 
-#  TODO: Добавить связь с юзером
-class ChatUser(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
-
-   # def __str__(self):
-    #    return f"{self.user} — {self.chat}"
-
-#  TODO: Добавить связь с юзером
-class Message(models.Model):
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
-    #sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    message = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)  # Новое поле для "Непрочитано/Прочитано"
-
-    def __str__(self):
-        return f"Message from {self.sender} at {self.timestamp}"
-
-
-
-#  TODO: Добавить связь с юзером
-class LessonSchedule(models.Model):
-    #teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lessons')  # преподаватель
-    class_name = models.CharField(max_length=255)  # название класса или группы
-    subject = models.CharField(max_length=255)  # предмет
-    start_time = models.DateTimeField()  # начало урока
-    end_time = models.DateTimeField()  # окончание урока
-
-    def __str__(self):
-        return f"{self.subject} for {self.class_name} by {self.teacher}"

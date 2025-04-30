@@ -1,7 +1,12 @@
+from django.contrib.auth import login, logout
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from user.choices import ROLE_CHOICES
+
 
 
 class MyUserManager(BaseUserManager):
@@ -78,4 +83,5 @@ class MyUser(AbstractBaseUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
+
 

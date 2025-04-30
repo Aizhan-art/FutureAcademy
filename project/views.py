@@ -98,10 +98,10 @@ class StudentActivityListView(APIView):
 
         if request.user.role == 'parent':
             children = MyUser.objects.filter(parent=request.user, role='student')
-            activities = StudentActivity.objects.filter(student__in=children).order_by('-date')[:10]
+            activities = StudentActivity.objects.filter(student__in=children).order_by('-date')[:3]
 
         elif request.user.role == 'student':
-            activities = StudentActivity.objects.filter(student=request.user).order_by('-date')[:10]
+            activities = StudentActivity.objects.filter(student=request.user).order_by('-date')[:3]
         else:
             return Response({'detail': 'Access denied'}, status=403)
 

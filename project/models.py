@@ -1,94 +1,85 @@
-#from django.contrib.auth import get_user_model
 from django.db import models
 import datetime
 from .choices import TaskStatusEnum, DiaryGradeEnum
 from django.conf import settings
 
+from user.models import MyUser
 
-#User = get_user_model()
+from django.db import models
+from django.contrib.auth import get_user_model
 
-
-class Image(models.Model):
-    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='images')
-    file = models.ImageField(upload_to='media/projects/detail_image')
-    created_date = models.DateTimeField(auto_now_add=True)
-    update_date = models.DateTimeField(auto_now=True)
-
-
-    def __str__(self):
-        return str(self.file)
+MyUserUser = get_user_model()
 
 
 class Project(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=225, verbose_name='Название')
-    description = models.TextField(verbose_name='Описание')
+    title = models.CharField(max_length=225, verbose_name='Название проекта')
+    description = models.TextField(verbose_name='Описание проекта')
     main_cover = models.ImageField(upload_to='media/projects/main_cover', verbose_name='Главное фото')
+    deadline = models.DateField(verbose_name='Дедлайн', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
+class Task(models.Model):
+    project = models.ForeignKey(Project, related_name='tasks', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    main_cover = models.ImageField(upload_to='media/projects/main_cover', verbose_name='Главное фото')
+    is_active = models.BooleanField(default=True)
+    responsible_user = models.ForeignKey(MyUserUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
 
-class UserProject(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-
-    #def __str__(self):
-     #   return f"{self.user} — {self.project}"
-
-
+    def __str__(self):
+        return self.title
 
 class Event(models.Model):
-    #users = models.ManyToManyField(User, through='UserEvent', related_name='events')
     title = models.CharField(max_length=255)
-    description = models.TextField()
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
-    grade = models.IntegerField()  # или models.CharField, если уровни разные
-
+    grade = models.PositiveSmallIntegerField()
 
     def __str__(self):
         return self.title
 
 
-class UserEvent(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+class StudentActivity(models.Model):
+    student = models.ForeignKey(MyUser, on_delete=models.CASCADE, related_name='activities')
+    description = models.TextField()
+    date = models.DateField()
 
-    #def __str__(self):
-     #   return f"{self.user} — {self.event}"
-
-
-
-class Classmate(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    class_name = models.CharField(max_length=255)
-    graduation_year = models.IntegerField()
-
-    #def __str__(self):
-     #   return f"{self.user} — {self.class_name}"
-
-
-class Employee(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    position = models.CharField(max_length=255)
-    department = models.CharField(max_length=255)
-    hire_date = models.DateField()
-
-    #def __str__(self):
-     #   return f"{self.user} — {self.position}"
-
+    def __str__(self):
+        return f"{self.student.first_name} - {self.description}"
 
 class News(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=255, verbose_name='Название')
+    description = models.TextField(verbose_name='Описание', default='Нет описания')
+    image = models.ImageField(upload_to='media/news/', verbose_name='Фото', default='no-image.png')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     def __str__(self):
         return self.title
+
+class StudentAchievement(models.Model):
+    student = models.ForeignKey(MyUser, on_delete=models.CASCADE, limit_choices_to={'role': 'student'})
+    title = models.CharField(max_length=255)  
+    date = models.DateField(auto_now_add=True)  
+    is_victory = models.BooleanField(default=False)  
+
+    def __str__(self):
+        return f"{self.student.first_name} - {self.title}"
+
+class Student(models.Model):
+    parent = models.ForeignKey(MyUser, on_delete=models.CASCADE, related_name='children')
+    first_name = models.CharField(max_length=255)
+    last_name = models.CharField(max_length=255)
+    grade = models.PositiveSmallIntegerField()
+    avatar = models.ImageField(upload_to='media/child_avatar', blank=True, null=True)
+    average_score = models.DecimalField(max_digits=4, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name}"
+
+
 
 
 class Dashboard(models.Model):
@@ -144,20 +135,6 @@ class LessonSchedule(models.Model):
         return f"{self.subject} for {self.class_name} by {self.teacher} on {self.date}"
 
 
-class Task(models.Model):
-    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='tasks')
-    #user = models.ForeignKey('MyUser', on_delete=models.CASCADE, related_name='tasks')
-    title = models.CharField(max_length=255, verbose_name='Название задачи')
-    description = models.TextField(verbose_name='Описание задачи')
-    status = models.CharField(
-        max_length=50,
-        choices=TaskStatusEnum.choices,
-        default=TaskStatusEnum.PENDING
-    )
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
-
-    def __str__(self):
-        return f"Task: {self.title}"
 
 
 class Diary(models.Model):

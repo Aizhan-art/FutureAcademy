@@ -96,7 +96,6 @@ class StudentAchievementListView(APIView):
         serializer = StudentAchievementSummarySerializer(children, many=True)
         return Response(serializer.data)
 
-
 class DiaryScheduleAPIView(APIView):
     def get(self, request, *args, **kwargs):
         user = request.user

@@ -3,8 +3,7 @@ from .models import LessonSchedule, Diary
 from rest_framework import serializers
 from .models import Project, Task, Event, StudentActivity, News, StudentAchievement
 from django.contrib.auth import get_user_model
-
-MyUser = get_user_model()
+from .models import MyUser
 
 class LessonWithGradeSerializer(serializers.ModelSerializer):
     grade = serializers.SerializerMethodField()
@@ -18,6 +17,17 @@ class LessonWithGradeSerializer(serializers.ModelSerializer):
         diary = Diary.objects.filter(user=user, lesson=obj).first()
         return diary.grade if diary else None
 
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MyUser
+        fields = ['id', 'first_name', 'last_name', 'email', 'role', 'grade', 'avatar', 'average_score']
+        
+class ChildSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MyUser
+        fields = ['id', 'first_name', 'last_name', 'grade', 'avatar', 'average_score']
 
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
@@ -45,13 +55,6 @@ class StudentActivitySerializer(serializers.ModelSerializer):
     class Meta:
         model = StudentActivity
         fields = ['id', 'student_name', 'description', 'date']
-
-
-class StudentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MyUser
-        fields = ['id', 'first_name', 'last_name', 'avatar', 'grade']
-
 
 
 class NewsSerializer(serializers.ModelSerializer):

@@ -54,7 +54,15 @@ class News(models.Model):
     def __str__(self):
         return self.title
 
-#Айжан, Манас нужна ли нам моделька Студент? Чтобыпри регистрации Родителя, у него точно был ребенок в этой школе?
+class StudentAchievement(models.Model):
+    student = models.ForeignKey(MyUser, on_delete=models.CASCADE, limit_choices_to={'role': 'student'})
+    title = models.CharField(max_length=255)  # Название достижения
+    date = models.DateField(auto_now_add=True)  # Когда было достижение
+    is_victory = models.BooleanField(default=False)  # Победа или просто участие
+
+    def __str__(self):
+        return f"{self.student.first_name} - {self.title}"
+
 class Student(models.Model):
     parent = models.ForeignKey(MyUser, on_delete=models.CASCADE, related_name='children')
     first_name = models.CharField(max_length=255)

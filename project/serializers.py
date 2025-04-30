@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Project, Task, Event, StudentActivity, News
+from .models import Project, Task, Event, StudentActivity, News, StudentAchievement
 from django.contrib.auth import get_user_model
 
 MyUser = get_user_model()
@@ -44,3 +44,22 @@ class NewsSerializer(serializers.ModelSerializer):
     class Meta:
         model = News
         fields = ['id', 'title', 'description', 'image', 'created_at']
+
+class StudentAchievementSummarySerializer(serializers.ModelSerializer):
+    last_achievement = serializers.SerializerMethodField()
+    total_participations = serializers.SerializerMethodField()
+    total_victories = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MyUser
+        fields = ['id', 'first_name', 'last_name', 'grade', 'last_achievement', 'total_participations', 'total_victories']
+
+    def get_last_achievement(self, obj):
+        achievement = StudentAchievement.objects.filter(student=obj).order_by('-date').first()
+        return achievement.title if achievement else None
+
+    def get_total_participations(self, obj):
+        return StudentAchievement.objects.filter(student=obj).count()
+
+    def get_total_victories(self, obj):
+        return StudentAchievement.objects.filter(student=obj, is_victory=True).count()

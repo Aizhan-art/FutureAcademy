@@ -2,7 +2,7 @@ from django.urls import path
 from .views import ProjectListView, EventListView, StudentActivityListView, ChildrenListView, NewsListView
 
 urlpatterns = [
-    #Одна страница?
+
     path('projects/', ProjectListView.as_view(), name='project_list'),
     path('events/', EventListView.as_view(), name='event_list'),
     path('student_activities/', StudentActivityListView.as_view(), name='student_activity_list'),

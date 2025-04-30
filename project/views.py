@@ -8,7 +8,8 @@ from django.db.models import Q
 from .permissions import OnlyReadForParentsPermission
 
 from .serializers import (
-    ProjectSerializer, EventSerializer, StudentActivitySerializer, StudentSerializer, NewsSerializer)
+    ProjectSerializer, EventSerializer, StudentActivitySerializer, StudentSerializer, NewsSerializer,
+    StudentAchievementSummarySerializer)
 
 MyUser = get_user_model()
 
@@ -35,52 +36,35 @@ class EventListView(APIView):
 
 class StudentActivityListView(APIView):
     permission_classes = [IsAuthenticated]
-    permission_classes = [OnlyReadForParentsPermission]
+
     def get(self, request):
-        children = MyUser.objects.filter(role=False, grade__isnull=False)
-        activities = StudentActivity.objects.filter(student__in=children).order_by('-date')[:10]
+
+        if request.user.role == 'parent':
+            children = MyUser.objects.filter(parent=request.user, role='student')
+            activities = StudentActivity.objects.filter(student__in=children).order_by('-date')[:10]
+
+        elif request.user.role == 'student':
+            activities = StudentActivity.objects.filter(student=request.user).order_by('-date')[:10]
+        else:
+            return Response({'detail': 'Access denied'}, status=403)
+
         serializer = StudentActivitySerializer(activities, many=True)
         return Response(serializer.data)
 
-
 class ChildrenListView(APIView):
     permission_classes = [IsAuthenticated]
-    permission_classes = [OnlyReadForParentsPermission]
+
     def get(self, request):
-        children = MyUser.objects.filter(role=False, grade__isnull=False)
-        serializer = StudentSerializer(children, many=True)
+        if request.user.role != 'parent':
+            return Response({'detail': 'Only parents can view children'}, status=403)
+
+        children = MyUser.objects.filter(parent=request.user, role='student')
+        serializer = ChildSerializer(children, many=True)
         return Response(serializer.data)
-
-#Все надо оформлять так или как выше отдельно?
-class DashboardView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        # Последние 3 проекта
-        projects = Project.objects.all().order_by('-created_at')[:3]
-        projects_serializer = ProjectSerializer(projects, many=True)
-
-        # Последние 3 мероприятия
-        events = Event.objects.all().order_by('-start_date')[:3]
-        events_serializer = EventSerializer(events, many=True)
-
-        # Последние 3 события детей пользователя
-        student_activities = StudentActivity.objects.filter(child__parent=request.user).order_by('-date')[:3]
-        student_activity_serializer = StudentActivitySerializer(student_activities, many=True)
-
-        # Все дети родителя
-        students = Student.objects.filter(parent=request.user)
-        student_serializer = StudentSerializer(students, many=True)
-
-        return Response({
-            "projects": projects_serializer.data,
-            "events": events_serializer.data,
-            "student_activity": student_activity_serializer.data,
-            "student_serializer": student_serializer.data,
-        })
 
 class NewsListView(APIView):
     permission_classes = [IsAuthenticated]
+    permission_classes = [OnlyReadForParentsPermission]
 
     def get(self, request):
         search_query = request.query_params.get('search', '')
@@ -96,9 +80,14 @@ class NewsListView(APIView):
         serializer = NewsSerializer(news, many=True)
         return Response(serializer.data)
 
-class OnlyReadForParentsPermission(IsAuthenticated):
-    def has_permission(self, request, view):
 
-        if request.user.role == 'parent':
-            return request.method in ('GET', 'HEAD', 'OPTIONS')
-        return True
+class StudentAchievementListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role != 'parent':
+            return Response({'detail': 'Only parents can view student achievements'}, status=403)
+
+        children = MyUser.objects.filter(parent=request.user, role='student')
+        serializer = StudentAchievementSummarySerializer(children, many=True)
+        return Response(serializer.data)

@@ -5,4 +5,5 @@ ROLE_CHOICES = (
         ('student', 'Ученик'),
         ('parent', 'Родитель'),
         ('admin', 'Админ'),
+        ('teacher', 'Учитель')
     )

@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import (Project, Task, Event, StudentActivity, News,
                      StudentAchievement,  LessonSchedule, Diary)
+from .choices import DiaryGradeEnum
 
 from django.contrib.auth import get_user_model
 from .models import MyUser
@@ -94,5 +95,5 @@ class LessonWithGradeSerializer(serializers.ModelSerializer):
         diary = Diary.objects.filter(user=user, lesson=obj).first()
 
         if diary:
-            return dict(DiaryGradeEnum.choices).get(diary.grade)
+            return DiaryGradeEnum(diary.grade).label
         return None

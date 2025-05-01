@@ -1,75 +1,22 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import LessonSchedule
-from .serializers import LessonWithGradeSerializer
-import calendar
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, BasePermission
 from django.shortcuts import get_object_or_404
-from .models import Project, Task, Event, StudentActivity, News, Student
+from .models import (Project, Task, Event, StudentActivity, News, StudentAchievement,
+                     Student, Dashboard, LessonSchedule, Diary)
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from .permissions import OnlyReadForParentsPermission
 
-from .serializers import (
-    ProjectSerializer, EventSerializer, StudentActivitySerializer, NewsSerializer,
-    StudentAchievementSummarySerializer, ChildSerializer)
+from .permissions import OnlyReadForParentsPermission
+from rest_framework.generics import CreateAPIView
+from django.utils.timezone import now
+from datetime import timedelta
+from .serializers import (ProjectSerializer, EventSerializer, StudentActivitySerializer,
+                          NewsSerializer,StudentAchievementSummarySerializer, ChildSerializer,
+                          LessonWithGradeSerializer, LessonSerializer, DiarySerializer)
+
 
 MyUser = get_user_model()
-
-class DiaryScheduleAPIView(APIView):
-    def get(self, request, *args, **kwargs):
-        user = request.user
-
-        data = {}
-
-        # Проверяем роль пользователя
-        if user.role == 'teacher':
-            lessons = LessonSchedule.objects.filter(teacher=user)
-
-        elif user.role in ['student', 'parent']:
-            # Если ученик или родитель, берем все уроки класса ученика
-            lessons = LessonSchedule.objects.filter(class_name=user.class_name)
-
-        else:
-            return Response({'error': 'Недостаточно прав'}, status=403)
-
-        # Сериализация уроков
-        serializer = LessonWithGradeSerializer(lessons, many=True, context={'user': user})
-
-        for lesson_data in serializer.data:
-            # Находим день недели
-            lesson_obj = lessons.get(subject=lesson_data['subject'], start_time=lesson_data['start_time'])
-            date_obj = lesson_obj.date
-
-            weekday = calendar.day_name[date_obj.weekday()]  # Получаем день недели на английском
-
-            week_translation = {
-                'Monday': 'Понедельник',
-                'Tuesday': 'Вторник',
-                'Wednesday': 'Среда',
-                'Thursday': 'Четверг',
-                'Friday': 'Пятница',
-                'Saturday': 'Суббота',
-                'Sunday': 'Воскресенье',
-            }
-            day_name = week_translation.get(weekday, weekday)
-
-            if day_name not in data:
-                data[day_name] = []
-
-            data[day_name].append({
-                'title': lesson_data['subject'],
-                'start_time': lesson_data['start_time'],
-                'end_time': lesson_data['end_time'],
-                'grade': lesson_data['grade']
-            })
-
-        return Response(data)
-
-
-
 
 class ProjectListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -148,3 +95,60 @@ class StudentAchievementListView(APIView):
         children = MyUser.objects.filter(parent=request.user, role='student')
         serializer = StudentAchievementSummarySerializer(children, many=True)
         return Response(serializer.data)
+
+
+class DiaryScheduleAPIView(APIView):
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        data = {}
+
+        if user.role == 'teacher':
+            lessons = LessonSchedule.objects.filter(teacher=user)
+        elif user.role in ['student', 'parent']:
+            lessons = LessonSchedule.objects.filter(class_name=user.class_name)
+        else:
+            return Response({'ошибка': 'Недостаточно прав'}, status=403)
+
+        # неделя и диапазон дат
+        week_param = int(request.query_params.get('week', 1))
+        today = now().date()
+        monday = today - timedelta(days=today.weekday()) + timedelta(weeks=week_param - 1)
+        friday = monday + timedelta(days=4)
+
+        lessons = lessons.filter(date__range=(monday, friday)).order_by('date', 'start_time')
+
+        serializer = LessonWithGradeSerializer(lessons, many=True, context={'user': user})
+
+        # группируем по дате
+        for lesson_data in serializer.data:
+            lesson_obj = lessons.get(subject=lesson_data['subject'], start_time=lesson_data['start_time'])
+            date_str = lesson_obj.date.strftime('%d.%m.%Y')
+
+            if date_str not in data:
+                data[date_str] = []
+
+            data[date_str].append({
+                'предмет': lesson_data['subject'],
+                'время_начала': lesson_data['start_time'],
+                'время_окончания': lesson_data['end_time'],
+                'оценка': lesson_data['grade']
+            })
+
+        return Response(data)
+
+
+class LessonCreateAPIView(CreateAPIView):
+    queryset = LessonSchedule.objects.all()
+    serializer_class = LessonSerializer
+    permission_classes = [IsAdminUser]
+
+
+class IsTeacher(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.role == 'teacher'
+
+
+class DiaryCreateAPIView(CreateAPIView):
+    queryset = Diary.objects.all()
+    serializer_class = DiarySerializer
+    permission_classes = [IsTeacher]

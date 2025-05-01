@@ -1,22 +1,9 @@
 from rest_framework import serializers
-from .models import LessonSchedule, Diary
-from rest_framework import serializers
-from .models import Project, Task, Event, StudentActivity, News, StudentAchievement
+from .models import (Project, Task, Event, StudentActivity, News,
+                     StudentAchievement,  LessonSchedule, Diary)
+
 from django.contrib.auth import get_user_model
 from .models import MyUser
-
-class LessonWithGradeSerializer(serializers.ModelSerializer):
-    grade = serializers.SerializerMethodField()
-
-    class Meta:
-        model = LessonSchedule
-        fields = ('subject', 'start_time', 'end_time', 'grade')
-
-    def get_grade(self, obj):
-        user = self.context.get('user')
-        diary = Diary.objects.filter(user=user, lesson=obj).first()
-        return diary.grade if diary else None
-
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -62,6 +49,7 @@ class NewsSerializer(serializers.ModelSerializer):
         model = News
         fields = ['id', 'title', 'description', 'image', 'created_at']
 
+
 class StudentAchievementSummarySerializer(serializers.ModelSerializer):
     last_achievement = serializers.SerializerMethodField()
     total_participations = serializers.SerializerMethodField()
@@ -81,3 +69,30 @@ class StudentAchievementSummarySerializer(serializers.ModelSerializer):
     def get_total_victories(self, obj):
         return StudentAchievement.objects.filter(student=obj, is_victory=True).count()
 
+
+class LessonSerializer(serializers.ModelSerializer):
+        class Meta:
+            model = LessonSchedule
+            fields = '__all__'
+
+
+class DiarySerializer(serializers.ModelSerializer):
+        class Meta:
+            model = Diary
+            fields = '__all__'
+
+
+class LessonWithGradeSerializer(serializers.ModelSerializer):
+    grade = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LessonSchedule
+        fields = ('subject', 'start_time', 'end_time', 'grade')
+
+    def get_grade(self, obj):
+        user = self.context.get('user')
+        diary = Diary.objects.filter(user=user, lesson=obj).first()
+
+        if diary:
+            return dict(DiaryGradeEnum.choices).get(diary.grade)
+        return None

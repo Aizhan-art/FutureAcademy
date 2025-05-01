@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'project',
     'user',
+    'chat'
 
 ]
 
@@ -82,6 +83,8 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+AUTH_USER_MODEL = 'user.MyUser'
 
 
 # Password validation

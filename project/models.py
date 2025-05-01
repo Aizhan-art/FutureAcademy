@@ -1,14 +1,13 @@
+from django.contrib.auth import get_user_model
 from django.db import models
 import datetime
+
 from .choices import TaskStatusEnum, DiaryGradeEnum
+
 from django.conf import settings
 
-from user.models import MyUser
 
-from django.db import models
-from django.contrib.auth import get_user_model
-
-MyUserUser = get_user_model()
+MyUser = get_user_model()
 
 
 class Project(models.Model):
@@ -27,7 +26,7 @@ class Task(models.Model):
     title = models.CharField(max_length=255)
     main_cover = models.ImageField(upload_to='media/projects/main_cover', verbose_name='Главное фото')
     is_active = models.BooleanField(default=True)
-    responsible_user = models.ForeignKey(MyUserUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
+    responsible_user = models.ForeignKey(MyUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
 
     def __str__(self):
         return self.title
@@ -80,50 +79,17 @@ class Student(models.Model):
         return f"{self.first_name} {self.last_name}"
 
 
-
-
 class Dashboard(models.Model):
-    #user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(MyUser, on_delete=models.CASCADE, null=True, blank=True)
     projects_count = models.IntegerField(default=0)
     events_count = models.IntegerField(default=0)
 
-    #def __str__(self):
-     #   return f"Dashboard for {self.user}"
-
-
-
-class Chat(models.Model):
-   # users = models.ManyToManyField(User, through='ChatUser', related_name='chats')
-    title = models.CharField(max_length=255)
-    is_group = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
     def __str__(self):
-        return self.title
-
-
-class ChatUser(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
-
-    #def __str__(self):
-     #   return f"{self.user} — {self.chat}"
-
-
-class Message(models.Model):
-    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
-    #sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    message = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)  # Новое поле для "Непрочитано/Прочитано"
-
-    def __str__(self):
-        return f"Message from {self.sender} at {self.timestamp}"
-
+        return f"Dashboard for {self.user}"
 
 
 class LessonSchedule(models.Model):
-    #teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lessons')  # преподаватель
+    teacher = models.ForeignKey(MyUser, on_delete=models.CASCADE, null=True, blank=True)
     class_name = models.CharField(max_length=255)  # название класса или группы
     subject = models.CharField(max_length=255)  # предмет
     date = models.DateField(default=datetime.date.today)
@@ -135,10 +101,8 @@ class LessonSchedule(models.Model):
         return f"{self.subject} for {self.class_name} by {self.teacher} on {self.date}"
 
 
-
-
 class Diary(models.Model):
-    #user = models.ForeignKey('MyUser', on_delete=models.CASCADE, related_name='diaries')
+    user = models.ForeignKey(MyUser, on_delete=models.CASCADE, null=True, blank=True)
     lesson = models.ForeignKey(
         'LessonSchedule',
         on_delete=models.CASCADE,
@@ -154,22 +118,3 @@ class Diary(models.Model):
 
     def __str__(self):
         return f"Diary Entry: {self.title} for {self.user}"
-
-
-
-class Conversation(models.Model):
-    name = models.CharField(max_length=255, blank=True, null=True)
-    is_group = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-class Participant(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
-    joined_at = models.DateTimeField(auto_now_add=True)
-
-class Message(models.Model):
-    conversation = models.ForeignKey(Conversation, related_name='messages', on_delete=models.CASCADE)
-    #sender = models.ForeignKey(User, on_delete=models.CASCADE)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    #read_by = models.ManyToManyField(User, related_name='read_messages', blank=True)

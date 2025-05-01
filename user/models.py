@@ -1,13 +1,10 @@
-
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
-
-from user.choices import ROLE_CHOICES
-
+from .choices import ROLE_CHOICES
 
 
 class MyUserManager(BaseUserManager):
-    def create_user(self, email, phone_number, username, password=None):
+    def create_user(self, email, phone_number, first_name, password=None):
         """
         Creates and saves a User with the given email, date of
         birth and password.
@@ -16,14 +13,14 @@ class MyUserManager(BaseUserManager):
         user = self.model(
             email=email,
             phone_number=phone_number,
-            username=username,
+            first_name=first_name,
         )
 
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, phone_number, username, password=None):
+    def create_superuser(self, email, phone_number, first_name, password=None):
         """
         Creates and saves a superuser with the given email, date of
         birth and password.
@@ -31,7 +28,7 @@ class MyUserManager(BaseUserManager):
         user = self.create_user(
             email=email,
             phone_number=phone_number,
-            username=username,
+            first_name=first_name,
         )
         user.is_admin = True
         user.set_password(password)
@@ -50,13 +47,14 @@ class MyUser(AbstractBaseUser):
     avatar = models.ImageField(upload_to='media/user_cover', blank=True, null=True)
     created_date = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    is_admin = models.BooleanField(default=False)
 
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='user_children')
 
     objects = MyUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'phone_number']
+    REQUIRED_FIELDS = ['first_name', 'phone_number']
 
     def __init__(self, *args, **kwargs):
         super().__init__(args, kwargs)
@@ -84,5 +82,3 @@ class MyUser(AbstractBaseUser):
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
-
-

@@ -127,10 +127,10 @@ class DiaryScheduleAPIView(APIView):
                 data[date_str] = []
 
             data[date_str].append({
-                'предмет': lesson_data['subject'],
-                'время_начала': lesson_data['start_time'],
-                'время_окончания': lesson_data['end_time'],
-                'оценка': lesson_data['grade']
+                'subject': lesson_data['subject'],
+                'start_time': lesson_data['start_time'],
+                'end_time': lesson_data['end_time'],
+                'grade': lesson_data['grade']
             })
 
         return Response(data)

@@ -1,30 +1,24 @@
 from rest_framework import serializers
 from .models import User, Conversation, Message
+from django.utils.timezone import localtime
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'role']
+class ChatPreviewSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    title = serializers.CharField()
+    logo = serializers.CharField()  # You can use serializers.ImageField() if serving images
+    last_message = serializers.CharField()
+    total_unread_messages = serializers.IntegerField()
+    last_message_time = serializers.CharField()
+    is_read = serializers.BooleanField()
 
+class MessageDetailSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    user_logo = serializers.CharField()
+    sent_at = serializers.CharField()
+    message = serializers.CharField()
+    is_current_user = serializers.BooleanField()
 
-class MessageSerializer(serializers.ModelSerializer):
-    sender = UserSerializer(read_only=True)
-
-    class Meta:
-        model = Message
-        fields = ['id', 'sender', 'content', 'timestamp']
-
-
-class ConversationSerializer(serializers.ModelSerializer):
-    messages = MessageSerializer(many=True, read_only=True)
-    unread_count = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Conversation
-        fields = ['id', 'name', 'is_group', 'created_at', 'messages', 'unread_count']
-
-    def get_unread_count(self, obj):
-        user = self.context['request'].user
-        return obj.messages.exclude(read_by=user).count()
-
+class SendMessageSerializer(serializers.Serializer):
+    message = serializers.CharField()

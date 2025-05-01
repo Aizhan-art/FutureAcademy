@@ -1,6 +1,15 @@
 from django.db import models
 from .choices import TaskStatusEnum, DiaryGradeEnum
+from django.contrib.auth.models import AbstractUser
 
+class User(AbstractUser):
+    ROLE_CHOICES = (
+        ('student', 'Student'),
+        ('teacher', 'Teacher'),
+        ('parent', 'Parent'),
+    )
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    profile_image = models.ImageField(upload_to='profiles/', blank=True, null=True)
 
 class Image(models.Model):
     project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='images')
@@ -101,31 +110,30 @@ class Dashboard(models.Model):
 class Chat(models.Model):
     title = models.CharField(max_length=255)
     is_group = models.BooleanField(default=False)
+    logo = models.ImageField(upload_to='logos/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
-    #users = models.ManyToManyField(User, through='ChatUser', related_name='chats')
 
     def __str__(self):
         return self.title
 
 #  TODO: Добавить связь с юзером
 class ChatUser(models.Model):
-    #user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
 
-   # def __str__(self):
-    #    return f"{self.user} — {self.chat}"
+    def __str__(self):
+        return f"{self.user.username} — {self.chat.title}"
 
 #  TODO: Добавить связь с юзером
 class Message(models.Model):
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
-    #sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
     message = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)  # Новое поле для "Непрочитано/Прочитано"
+    is_read = models.BooleanField(default=False)  # Optional: can be per-user if needed later
 
     def __str__(self):
-        return f"Message from {self.sender} at {self.timestamp}"
+        return f"Message from {self.sender.username} at {self.timestamp}"
 
 
 
@@ -170,19 +178,3 @@ class Diary(models.Model):
 
 
 
-class Conversation(models.Model):
-    name = models.CharField(max_length=255, blank=True, null=True)
-    is_group = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-class Participant(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE)
-    joined_at = models.DateTimeField(auto_now_add=True)
-
-class Message(models.Model):
-    conversation = models.ForeignKey(Conversation, related_name='messages', on_delete=models.CASCADE)
-    sender = models.ForeignKey(User, on_delete=models.CASCADE)
-    content = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    read_by = models.ManyToManyField(User, related_name='read_messages', blank=True)
